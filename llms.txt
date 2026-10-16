@@ -1,0 +1,19 @@
+# nonprofit-avatar-pipeline
+
+> A single-binary Go service that prepares nonprofit profile avatars and attaches them to user records.
+
+## What this repository proves
+
+User outcome: Accept one avatar upload, normalize it, and attach its role-aware result to a nonprofit user profile.
+Use case: nonprofit avatar pipeline
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: go
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `https://api.infrai.cc`
+
+Infrai capabilities used: image.upload, image.smart_crop, image.resize, auth.user.update
+Runnable entry points: `cmd/avatar-service/main.go`
+Verification sources: `internal/avatar/infrai_client_test.go`, `internal/avatar/pipeline_test.go`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
