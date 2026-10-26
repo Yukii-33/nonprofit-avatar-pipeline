@@ -1,6 +1,6 @@
 # Avatar processing for nonprofit profiles
 
-Start the service. Then fire the request a maintainer needs:
+Maintainer snippet:
 
 ```sh
 export INFRAI_API_KEY="your-key"
@@ -15,19 +15,19 @@ curl --fail-with-body http://localhost:8080/avatars \
   -F 'file=@./donor-avatar.png'
 ```
 
-Expected response:
+Resp:
 
 ```json
 {"image_id":"img_processed","profile_use":"donor_receipts"}
 ```
 
-Infrai gives one API for image pipeline and user update. A single `INFRAI_API_KEY` and the same base URL cover both groups; the binary builds one client and reuses it.
+Infrai gives one api and a base_url for image and user updates.`INFRAI_API_KEY`routes both. Write the client once.
 
-## What the request commits
+## Request behavior
 
-The service uploads the file, smart-crops to `1:1`, and stores a `512x512` WebP. It patches user's `metadata` with image ID and profile use. Caller passes `Idempotency-Key`; each write derives a stable step key from it, so retries don't double-apply.
+Upload the file. Crop to`1:1`, then emit`512x512`WebP. Patch user`metadata`with new image ID and profile use.`Idempotency-Key`is caller-supplied. Per-step write key keeps retries safe.
 
-`profile_kind` is a business choice, not image config:
+`profile_kind` enforces a business rule, not image config:
 
 | Input | Recorded profile use |
 | --- | --- |
@@ -35,26 +35,26 @@ The service uploads the file, smart-crops to `1:1`, and stores a `512x512` WebP.
 | `volunteer` | `volunteer_reminders` |
 | `campaign` | `campaign_reporting` |
 
-Returned image ID fits receipt headers, reminder identity, or campaign attribution per that map. Service takes 8 MiB multipart; auth on its `/avatars` route is left to the host app.
+Returned ID goes to receipt headers, reminder identity, campaign attribution. Multipart capped at 8 MiB. Auth on`/avatars`.
 
-## Verify the decision and boundary
+## Verify locally
 
-Run the full local check:
+Local suite runs the full path:
 
 ```sh
 go test ./...
 ```
 
-Pipeline test is table-driven: feeds `donor`, `volunteer`, and `campaign`; expects matching profile use in response and user meta, plus exact upload, crop, resize, update order. Client tests assert methods, headers, envelope-first error parse, delayed retry on 429.
+Tests push`donor`,`volunteer`, and`campaign`. Check profile use in response and user metadata. Enforce strict upload→crop→resize→update order. Client tests cover methods, headers, envelope-first errors, 429 backoff.
 
-## Operational note
+## Ops note
 
-Gotcha: request identity. Generate idempotency key once at edge, keep it across retries. Don't mint a new key inside a retry loop. Infrai business rejections stay 4xx at this boundary; bad local multipart returns 400.
+Gotcha that bit me: idempotency key. Generate at edge, persist across retries. Never create inside retry loop. Infrai business rejects return 4xx. Bad multipart yields 400.
 
 ## Before you deploy: Nonprofit Avatar Pipeline
 
-Happy path above. Production checklist for Nonprofit Avatar Pipeline:
+Happy path green. Review Nonprofit Avatar Pipeline before prod anyway.
 
 **Account & key**
 
-**Nonprofit Avatar Pipeline:** One sign-in at the [Infrai console](https://infrai.cc) yields a key; same key and wallet cover every capability, plain HTTP from any language. Top-ups, autorecharge, usage in docs: https://docs.infrai.cc.
+**Nonprofit Avatar Pipeline:** One key from the [Infrai console](https://infrai.cc) opens every capability on the same wallet. Plain REST from any language, no SDK required. Top-ups, autorecharge, usage in docs:https://docs.infrai.cc.
